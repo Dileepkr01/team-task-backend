@@ -11,11 +11,9 @@ const app = express();
 
 
 app.use(cors({
-  origin: [
-    "https://team-task-frontend-gilt.vercel.app"
-  ],
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
 
@@ -31,11 +29,11 @@ app.use("/api/users", require("./routes/userRoutes"));
 
 // Test
 app.get("/", (req, res) => {
-  res.send("API Running...");
+    res.send("API Running...");
 });
 
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  console.log(`Server running on ${PORT}`);
+    console.log(`Server running on ${PORT}`);
 });

@@ -1,25 +1,35 @@
 const Task = require("../models/Task");
+const Project = require("../models/Project");
 
-// Create Task
+// ✅ Create Task
 exports.createTask = async (req, res) => {
   try {
     const { title, projectId, assignedTo, dueDate } = req.body;
 
-    // 🔒 basic validation
     if (!title || !projectId) {
       return res.status(400).json({
         message: "Title and projectId are required"
       });
     }
 
+    // 🔒 check if user belongs to project
+    const project = await Project.findOne({
+      _id: projectId,
+      members: req.user.id
+    });
+
+    if (!project) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
     const task = await Task.create({
       title,
       projectId,
       assignedTo: assignedTo || null,
-      dueDate: dueDate || null
+      dueDate: dueDate || null,
+      createdBy: req.user.id  
     });
 
-    
     const populated = await Task.findById(task._id)
       .populate("projectId", "name")
       .populate("assignedTo", "name email");
@@ -32,10 +42,15 @@ exports.createTask = async (req, res) => {
   }
 };
 
-// Get All Tasks
+// ✅ Get Tasks (user-based)
 exports.getTasks = async (req, res) => {
   try {
-    const tasks = await Task.find()
+    const tasks = await Task.find({
+      $or: [
+        { createdBy: req.user.id },
+        { assignedTo: req.user.id }
+      ]
+    })
       .populate("projectId", "name")
       .populate("assignedTo", "name email");
 
@@ -47,10 +62,23 @@ exports.getTasks = async (req, res) => {
   }
 };
 
-// Update Task (status / assign)
+// ✅ Update Task
 exports.updateTask = async (req, res) => {
   try {
     const { status, assignedTo } = req.body;
+
+    // 🔒 ensure user owns or assigned
+    const task = await Task.findOne({
+      _id: req.params.id,
+      $or: [
+        { createdBy: req.user.id },
+        { assignedTo: req.user.id }
+      ]
+    });
+
+    if (!task) {
+      return res.status(403).json({ message: "Not allowed" });
+    }
 
     const updated = await Task.findByIdAndUpdate(
       req.params.id,
@@ -63,10 +91,6 @@ exports.updateTask = async (req, res) => {
       .populate("projectId", "name")
       .populate("assignedTo", "name email");
 
-    if (!updated) {
-      return res.status(404).json({ message: "Task not found" });
-    }
-
     res.json(updated);
 
   } catch (err) {
@@ -75,14 +99,19 @@ exports.updateTask = async (req, res) => {
   }
 };
 
-// Delete Task 
+// ✅ Delete Task
 exports.deleteTask = async (req, res) => {
   try {
-    const deleted = await Task.findByIdAndDelete(req.params.id);
+    const task = await Task.findOne({
+      _id: req.params.id,
+      createdBy: req.user.id
+    });
 
-    if (!deleted) {
-      return res.status(404).json({ message: "Task not found" });
+    if (!task) {
+      return res.status(403).json({ message: "Not allowed" });
     }
+
+    await Task.findByIdAndDelete(req.params.id);
 
     res.json({ message: "Task deleted" });
 
@@ -92,10 +121,15 @@ exports.deleteTask = async (req, res) => {
   }
 };
 
-// Dashboard
+// ✅ Dashboard (user-specific)
 exports.getDashboard = async (req, res) => {
   try {
-    const tasks = await Task.find();
+    const tasks = await Task.find({
+      $or: [
+        { createdBy: req.user.id },
+        { assignedTo: req.user.id }
+      ]
+    });
 
     const total = tasks.length;
     const completed = tasks.filter(t => t.status === "done").length;

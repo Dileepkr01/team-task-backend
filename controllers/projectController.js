@@ -2,20 +2,33 @@ const Project = require("../models/Project");
 
 // Create Project (Admin only)
 exports.createProject = async (req, res) => {
-    try {
-        const project = await Project.create({
-            ...req.body,
-            createdBy: req.user.id
-        });
+  try {
+    const { name, description } = req.body;
 
-        res.json(project);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+    const project = await Project.create({
+      name,
+      description,
+      createdBy: req.user.id,
+      members: [req.user.id] // creator is member
+    });
+
+    res.status(201).json(project);
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };
 
-// Get all projects
+// Get only user's projects
 exports.getProjects = async (req, res) => {
-    const projects = await Project.find().populate("members");
+  try {
+    const projects = await Project.find({
+      members: req.user.id   
+    }).populate("members", "name email");
+
     res.json(projects);
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };

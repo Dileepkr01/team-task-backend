@@ -3,30 +3,17 @@ const Project = require("../models/Project");
 // ✅ Create Project (Admin only)
 exports.createProject = async (req, res) => {
   try {
-    const { name, description, members } = req.body;
+    const { name, description } = req.body;
 
-    // 🔒 Validate required field
+    // 🔒 validation
     if (!name) {
       return res.status(400).json({ message: "Project name is required" });
-    }
-
-    
-    let memberList = [];
-
-    if (Array.isArray(members)) {
-      memberList = members;
     }
 
     const project = await Project.create({
       name,
       description,
-      createdBy: req.user.id,
-
-      // creator + additional members
-      members: [
-        req.user.id,
-        ...memberList
-      ]
+      createdBy: req.user.id   // only owner
     });
 
     res.status(201).json(project);
@@ -37,13 +24,12 @@ exports.createProject = async (req, res) => {
   }
 };
 
-// ✅ Get Projects (user-based)
+// ✅ Get Projects (only creator sees)
 exports.getProjects = async (req, res) => {
   try {
     const projects = await Project.find({
-      members: req.user.id
-    })
-      .populate("members", "name email");
+      createdBy: req.user.id
+    });
 
     res.json(projects);
 

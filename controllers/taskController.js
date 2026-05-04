@@ -12,10 +12,10 @@ exports.createTask = async (req, res) => {
       });
     }
 
-    // 🔒 check if user belongs to project
+
     const project = await Project.findOne({
       _id: projectId,
-      members: req.user.id
+      createdBy: req.user.id
     });
 
     if (!project) {
@@ -27,7 +27,7 @@ exports.createTask = async (req, res) => {
       projectId,
       assignedTo: assignedTo || null,
       dueDate: dueDate || null,
-      createdBy: req.user.id  
+      createdBy: req.user.id
     });
 
     const populated = await Task.findById(task._id)
@@ -42,7 +42,7 @@ exports.createTask = async (req, res) => {
   }
 };
 
-// ✅ Get Tasks (user-based)
+
 exports.getTasks = async (req, res) => {
   try {
     const tasks = await Task.find({
@@ -67,7 +67,6 @@ exports.updateTask = async (req, res) => {
   try {
     const { status, assignedTo } = req.body;
 
-    // 🔒 ensure user owns or assigned
     const task = await Task.findOne({
       _id: req.params.id,
       $or: [
@@ -121,7 +120,7 @@ exports.deleteTask = async (req, res) => {
   }
 };
 
-// ✅ Dashboard (user-specific)
+// ✅ Dashboard
 exports.getDashboard = async (req, res) => {
   try {
     const tasks = await Task.find({

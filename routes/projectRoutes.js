@@ -6,8 +6,7 @@ const protect = require("../middleware/authMiddleware");
 const authorize = require("../middleware/roleMiddleware");
 
 // Admin only
-router.post("/", protect, authorize("admin"), createProject);
-
+router.post("/", protect, createProject);
 // All users
 router.get("/", protect, getProjects);
 
